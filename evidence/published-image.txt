@@ -1,0 +1,1 @@
+﻿ghcr.io/nomansahi/devops-platform:022c88f745420339ad52ee8b51a16e5f5a4dc071

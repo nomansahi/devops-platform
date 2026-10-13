@@ -73,3 +73,101 @@ jobs:
           docker tag practice-app:ci "$IMAGE:$COMMIT_SHA"
           docker push "$IMAGE:$COMMIT_SHA"
           echo "Published image: $IMAGE:$COMMIT_SHA" >> "$GITHUB_STEP_SUMMARY"
+
+  deployment:
+    name: Test Kubernetes deployment
+    needs: application
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    permissions:
+      contents: read
+      packages: read
+
+    env:
+      IMAGE: ghcr.io/nomansahi/devops-platform:${{ github.sha }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.12.2
+
+      - name: Download published image
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '%s' "$GH_TOKEN" |
+            docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker pull "$IMAGE"
+
+      - name: Start temporary Kubernetes cluster
+        run: |
+          minikube start \
+            --driver=docker \
+            --kubernetes-version=v1.35.1 \
+            --cpus=2 \
+            --memory=4096
+
+      - name: Load image into cluster
+        run: minikube image load "$IMAGE"
+
+      - name: Deploy using Terraform
+        run: |
+          terraform -chdir=terraform init -input=false
+          terraform -chdir=terraform plan \
+            "-var=app_image=$IMAGE" \
+            "-var=replicas=2" \
+            -input=false \
+            -out=deploy.tfplan
+          terraform -chdir=terraform apply -input=false deploy.tfplan
+
+      - name: Check rollout and HTTP responses
+        run: |
+          minikube kubectl -- rollout status \
+            deployment/practice-app \
+            -n devops-lab \
+            --timeout=120s
+
+          minikube kubectl -- port-forward \
+            -n devops-lab service/practice-app 8080:80 \
+            > /tmp/port-forward.log 2>&1 &
+          FORWARD_PID=$!
+          trap 'kill "$FORWARD_PID" 2>/dev/null || true' EXIT
+
+          curl --fail --silent --show-error \
+            --retry 20 --retry-delay 2 --retry-connrefused \
+            http://localhost:8080/health |
+            python3 -c 'import json,sys; assert json.load(sys.stdin)["status"] == "healthy"'
+
+          curl --fail --silent --show-error \
+            http://localhost:8080/db |
+            python3 -c 'import json,sys; assert json.load(sys.stdin)["result"] == 1'
+
+      - name: Collect deployment diagnostics
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p deployment-evidence
+          minikube kubectl -- get pods,deployments,services \
+            -n devops-lab -o wide \
+            > deployment-evidence/resources.txt 2>&1
+          minikube kubectl -- get events \
+            -n devops-lab --sort-by=.metadata.creationTimestamp \
+            > deployment-evidence/events.txt 2>&1
+
+      - name: Upload deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-evidence
+          path: deployment-evidence/
+          if-no-files-found: warn
+
+      - name: Remove temporary cluster
+        if: always()
+        run: minikube delete
