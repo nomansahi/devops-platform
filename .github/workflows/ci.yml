@@ -33,8 +33,13 @@ jobs:
         run: terraform -chdir=terraform validate
 
   application:
-    name: Build application image
+    name: Build, test and publish image
+    needs: terraform
     runs-on: ubuntu-24.04
+
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Check out repository
@@ -42,6 +47,7 @@ jobs:
 
       - name: Build image
         run: docker build -t practice-app:ci ./app
+
       - name: Test application behavior
         run: |
           docker run --rm \
@@ -49,3 +55,21 @@ jobs:
             --entrypoint python \
             practice-app:ci \
             -m unittest discover -s /app -p test_app.py
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          printf '%s' "$GH_TOKEN" |
+            docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Publish tested image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          IMAGE: ghcr.io/nomansahi/devops-platform
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          docker tag practice-app:ci "$IMAGE:$COMMIT_SHA"
+          docker push "$IMAGE:$COMMIT_SHA"
+          echo "Published image: $IMAGE:$COMMIT_SHA" >> "$GITHUB_STEP_SUMMARY"
