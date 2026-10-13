@@ -1,0 +1,3 @@
+﻿NAME                            READY   STATUS    RESTARTS   AGE     IP            NODE       NOMINATED NODE   READINESS GATES
+practice-app-6964764746-gzfnh   1/1     Running   0          2m24s   10.244.0.13   minikube   <none>           <none>
+

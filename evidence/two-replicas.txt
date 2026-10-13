@@ -1,0 +1,4 @@
+﻿NAME                            READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
+practice-app-7d5855f9db-hxvdj   1/1     Running   0          75s   10.244.0.16   minikube   <none>           <none>
+practice-app-7d5855f9db-twv45   1/1     Running   0          81s   10.244.0.14   minikube   <none>           <none>
+

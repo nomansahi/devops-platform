@@ -1,0 +1,9 @@
+﻿kubernetes_namespace_v1.lab: Refreshing state... [id=devops-lab]
+kubernetes_service_v1.app: Refreshing state... [id=devops-lab/practice-app]
+kubernetes_deployment_v1.app: Refreshing state... [id=devops-lab/practice-app]
+
+No changes. Your infrastructure matches the configuration.
+
+Terraform has compared your real infrastructure against your configuration
+and found no differences, so no changes are needed.
+

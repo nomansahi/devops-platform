@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Validate Terraform
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.12.2
+
+      - name: Check formatting
+        run: terraform -chdir=terraform fmt -check
+
+      - name: Initialize providers
+        run: terraform -chdir=terraform init -backend=false -input=false
+
+      - name: Validate configuration
+        run: terraform -chdir=terraform validate
+
+  application:
+    name: Build application image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Build image
+        run: docker build -t practice-app:ci ./app
+      - name: Test application behavior
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/app/test_app.py:/app/test_app.py:ro" \
+            --entrypoint python \
+            practice-app:ci \
+            -m unittest discover -s /app -p test_app.py

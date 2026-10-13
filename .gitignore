@@ -1,0 +1,32 @@
+# Credentials
+.env
+.env.*
+!.env.example
+
+# Terraform local state and cache
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+*.tfvars
+*.tfvars.json
+!*.example.tfvars
+
+# Python and SQLite local files
+__pycache__/
+*.py[cod]
+.venv/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Generated archives
+*.zip
+
+# Editor files
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
