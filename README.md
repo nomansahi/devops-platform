@@ -2,7 +2,9 @@
 
 
 
-A local Kubernetes project using Terraform and GitHub Actions.
+A Kubernetes learning project using Terraform, Docker,
+
+GitHub Actions, and GitHub Container Registry.
 
 
 
@@ -12,7 +14,7 @@ A local Kubernetes project using Terraform and GitHub Actions.
 
 \- Instrumented Python application with HTTP and SQLite endpoints.
 
-\- Minikube Kubernetes cluster.
+\- Local Minikube Kubernetes cluster.
 
 \- Terraform-managed namespace, Deployment, and Service.
 
@@ -22,17 +24,21 @@ A local Kubernetes project using Terraform and GitHub Actions.
 
 \- CPU and memory requests and limits.
 
-\- Automated Terraform validation and container build.
+\- Three automated application behavior tests.
 
-\- Three application behavior tests.
+\- Terraform validation and container builds in GitHub Actions.
 
-\- Evidence of pod replacement and scaling.
+\- Publishing tested images to GitHub Container Registry.
+
+\- Automated deployment verification in a temporary Kubernetes cluster.
+
+\- Evidence of pod replacement, scaling, and CI deployment.
 
 
 
 Terraform manages resources inside an existing cluster.
 
-It does not provision the Minikube cluster.
+Minikube creates the cluster locally and in the deployment-test workflow.
 
 
 
@@ -48,6 +54,8 @@ It does not provision the Minikube cluster.
 
 \- PowerShell.
 
+\- Internet access for initial downloads.
+
 
 
 Tested locally with Minikube 1.38.1, Kubernetes 1.35.1,
@@ -56,11 +64,15 @@ and Terraform 1.12.2.
 
 
 
-Use minikube kubectl -- to run a client matching the cluster.
+Use `minikube kubectl --` to run a client matching the cluster.
 
 
 
 \## Start the cluster
+
+
+
+Run from the project root:
 
 
 
@@ -74,11 +86,7 @@ minikube kubectl -- get nodes
 
 
 
-\## Build the application image
-
-
-
-From the project root:
+\## Build the local application image
 
 
 
@@ -92,9 +100,15 @@ minikube image build -t practice-app:v1 ./app
 
 The local deployment uses this image inside Minikube.
 
+The CI workflow separately builds and publishes commit-tagged images.
+
 
 
 \## Deploy with Terraform
+
+
+
+For a fresh local setup:
 
 
 
@@ -114,13 +128,17 @@ terraform -chdir=terraform apply "deploy.tfplan"
 
 
 
-For a fresh setup, Terraform creates the namespace, Deployment,
+Copy the example variables only during initial setup.
 
-and Service.
+Keep existing local variable changes on subsequent runs.
 
 
 
-If devops-lab resources already exist but are absent from Terraform
+Terraform creates the namespace, Deployment, and Service.
+
+
+
+If the devops-lab resources already exist but are absent from Terraform
 
 state, import them first:
 
@@ -144,7 +162,7 @@ Review the plan after importing before applying any differences.
 
 Terraform is the source of truth for these resources.
 
-k8s/app.yml is the initial bootstrap reference, with one replica.
+`k8s/app.yml` is the initial bootstrap reference, with one replica.
 
 Do not reapply it over the Terraform-managed deployment.
 
@@ -206,7 +224,7 @@ requests across both replicas. Restart it if its selected pod disappears.
 
 
 
-Edit replicas in terraform/lab.tfvars.
+Edit `replicas` in `terraform/lab.tfvars`.
 
 
 
@@ -226,6 +244,8 @@ terraform -chdir=terraform apply "scale.tfplan"
 
 The local lab allows one to three replicas.
 
+Continue using the variable file to retain the chosen replica count.
+
 
 
 \## Test pod recovery
@@ -244,7 +264,7 @@ minikube kubectl -- get pods -n devops-lab
 
 
 
-Delete that pod, replacing POD\_NAME:
+Delete that pod, replacing `POD\_NAME`:
 
 
 
@@ -280,6 +300,8 @@ docker run --rm -v "${PWD}/app/test\_app.py:/app/test\_app.py:ro" --entrypoint p
 
 Tests verify:
 
+
+
 \- Health and metric responses.
 
 \- HTTP failure logs correlated with response request IDs.
@@ -290,27 +312,75 @@ Tests verify:
 
 Tests use temporary SQLite files.
 
-
-
-\## CI
-
-
-
-.github/workflows/ci.yml runs on main pushes, pull requests,
-
-and manual dispatch.
+All three tests passed locally and in CI.
 
 
 
-It checks Terraform formatting and validity, builds the image,
-
-and runs application tests.
+\## CI and deployment verification
 
 
 
-GitHub-hosted runners do not have access to the local Minikube cluster.
+`.github/workflows/ci.yml` contains three sequential jobs:
 
-The current workflow does not deploy or publish images.
+
+
+1\. \*\*Validate Terraform:\*\* checks formatting and configuration.
+
+2\. \*\*Build, test and publish image:\*\* builds the image, runs application
+
+&#x20;  tests, and publishes the tested image to GitHub Container Registry.
+
+3\. \*\*Test Kubernetes deployment:\*\* creates a temporary Minikube cluster,
+
+&#x20;  deploys the published image with Terraform, and checks HTTP health
+
+&#x20;  and database responses.
+
+
+
+Pull requests and manual runs execute validation, builds, and tests.
+
+Pushes to main also publish images and run deployment verification.
+
+
+
+Images use this naming pattern:
+
+
+
+&#x20;   ghcr.io/nomansahi/devops-platform:<git-commit-sha>
+
+
+
+The commit tag identifies the source version.
+
+The deployment test downloads that published image and loads it
+
+into its temporary cluster.
+
+
+
+The workflow uses Ubuntu 24.04 runners and Terraform 1.12.2.
+
+Registry access uses the workflow's built-in GitHub token.
+
+
+
+The deployment job uploads resource and event diagnostics,
+
+then removes its temporary cluster.
+
+
+
+All three jobs passed during verification.
+
+
+
+This workflow verifies deployment in a temporary environment.
+
+It does not automatically update the local Minikube cluster
+
+or maintain a persistent production environment.
 
 
 
@@ -318,17 +388,29 @@ The current workflow does not deploy or publish images.
 
 
 
-\- evidence/pod-recovery.txt
+\- `evidence/pod-recovery.txt`: replacement pod after deletion.
 
-\- evidence/terraform-no-changes.txt
+\- `evidence/terraform-no-changes.txt`: configuration matched imported resources.
 
-\- evidence/two-replicas.txt
+\- `evidence/two-replicas.txt`: two ready local application pods.
+
+\- `evidence/published-image.txt`: first published image reference.
+
+\- `evidence/ci-deployment/resources.txt`: CI Kubernetes resource listing.
+
+\- `evidence/ci-deployment/events.txt`: CI Kubernetes events.
 
 
 
 The initial no-changes evidence used one replica.
 
 The later scaling evidence shows two ready pods.
+
+
+
+The published-image file records an earlier successful publication.
+
+Subsequent commits produce new image tags shown in their Actions summaries.
 
 
 
@@ -344,7 +426,13 @@ are excluded from Git.
 
 The provider lock file and example variables are committed.
 
-Kubernetes credentials remain in the local kubeconfig.
+Local Kubernetes credentials remain in the kubeconfig.
+
+
+
+Local Terraform state must be retained to manage existing resources.
+
+The CI deployment uses temporary state for its temporary cluster.
 
 
 
@@ -352,7 +440,7 @@ Kubernetes credentials remain in the local kubeconfig.
 
 
 
-Both replicas run on a single Minikube node.
+Both local replicas run on a single Minikube node.
 
 This does not provide protection against node failure.
 
@@ -372,7 +460,7 @@ shared persistent storage, stronger security, and operational controls.
 
 
 
-Next stages include image publishing, automated deployment,
+Next stages include Kubernetes monitoring, deployment to a persistent
 
-Kubernetes monitoring, and portfolio documentation.
+environment, and portfolio documentation.
 

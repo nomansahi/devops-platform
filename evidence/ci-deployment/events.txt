@@ -1,0 +1,14 @@
+LAST SEEN   TYPE      REASON              OBJECT                               MESSAGE
+18s         Normal    SuccessfulCreate    replicaset/practice-app-684bd7d4d7   Created pod: practice-app-684bd7d4d7-dnnmv
+18s         Normal    Scheduled           pod/practice-app-684bd7d4d7-9xzql    Successfully assigned devops-lab/practice-app-684bd7d4d7-9xzql to minikube
+18s         Normal    ScalingReplicaSet   deployment/practice-app              Scaled up replica set practice-app-684bd7d4d7 from 0 to 2
+18s         Warning   FailedScheduling    pod/practice-app-684bd7d4d7-9xzql    0/1 nodes are available: 1 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+18s         Normal    SuccessfulCreate    replicaset/practice-app-684bd7d4d7   Created pod: practice-app-684bd7d4d7-9xzql
+18s         Warning   FailedScheduling    pod/practice-app-684bd7d4d7-dnnmv    0/1 nodes are available: 1 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+18s         Normal    Scheduled           pod/practice-app-684bd7d4d7-dnnmv    Successfully assigned devops-lab/practice-app-684bd7d4d7-dnnmv to minikube
+17s         Normal    Created             pod/practice-app-684bd7d4d7-9xzql    Container created
+17s         Normal    Created             pod/practice-app-684bd7d4d7-dnnmv    Container created
+17s         Normal    Started             pod/practice-app-684bd7d4d7-dnnmv    Container started
+17s         Normal    Pulled              pod/practice-app-684bd7d4d7-dnnmv    Container image "ghcr.io/nomansahi/devops-platform:2b031265415b3a1029c34fbfa8f8b33de55e00ac" already present on machine and can be accessed by the pod
+17s         Normal    Started             pod/practice-app-684bd7d4d7-9xzql    Container started
+17s         Normal    Pulled              pod/practice-app-684bd7d4d7-9xzql    Container image "ghcr.io/nomansahi/devops-platform:2b031265415b3a1029c34fbfa8f8b33de55e00ac" already present on machine and can be accessed by the pod

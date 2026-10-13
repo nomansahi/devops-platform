@@ -1,0 +1,9 @@
+NAME                                READY   STATUS    RESTARTS   AGE   IP           NODE       NOMINATED NODE   READINESS GATES
+pod/practice-app-684bd7d4d7-9xzql   1/1     Running   0          18s   10.244.0.2   minikube   <none>           <none>
+pod/practice-app-684bd7d4d7-dnnmv   1/1     Running   0          18s   10.244.0.3   minikube   <none>           <none>
+
+NAME                           READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                                                       SELECTOR
+deployment.apps/practice-app   2/2     2            2           18s   app          ghcr.io/nomansahi/devops-platform:2b031265415b3a1029c34fbfa8f8b33de55e00ac   app=practice-app
+
+NAME                   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+service/practice-app   ClusterIP   10.103.96.217   <none>        80/TCP    18s   app=practice-app
